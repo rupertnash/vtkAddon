@@ -22,7 +22,9 @@ include(vtkAddonFunctionAddExecutable)
 # VTK
 #
 find_package(VTK REQUIRED)
-include(${VTK_USE_FILE})
+if(${VTK_VERSION} VERSION_LESS "8.90")
+  include(${VTK_USE_FILE})
+endif()
 set(vtkAddon_LIBS ${VTK_LIBRARIES})
 
 # --------------------------------------------------------------------------

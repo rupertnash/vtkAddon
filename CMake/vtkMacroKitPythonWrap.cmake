@@ -72,7 +72,7 @@ endmacro()
 #!   Slicer_VTK_WRAP_HIERARCHY_DIR:
 #!
 #!     Directory where to output the hierarchy files
-#!     Default is ${Slicer_BINARY_DIR}
+#!     Default is ${CMAKE_CURRENT_BINARY_DIR}
 #!
 #!   Slicer_VTK_WRAP_MODULE_INSTALL_COMPONENT_IDENTIFIER:
 #!
@@ -95,7 +95,8 @@ macro(vtkMacroKitPythonWrap)
 
   # Sanity checks
   set(expected_defined_vars
-    VTK_CMAKE_DIR VTK_WRAP_PYTHON BUILD_SHARED_LIBS VTK_LIBRARIES)
+    #VTK_CMAKE_DIR VTK_WRAP_PYTHON
+    BUILD_SHARED_LIBS VTK_LIBRARIES)
   foreach(var ${expected_defined_vars})
     if(NOT DEFINED ${var})
       message(FATAL_ERROR "error: ${var} CMake variable is not defined !")
@@ -132,7 +133,7 @@ macro(vtkMacroKitPythonWrap)
 
     # Tell vtkWrapPython.cmake to set VTK_PYTHON_LIBRARIES for us.
     set(VTK_WRAP_PYTHON_FIND_LIBS 1)
-    include(${VTK_CMAKE_DIR}/vtkWrapPython.cmake)
+    include(vtkWrapPython)
 
     set(TMP_WRAP_FILES ${MY_KIT_SRCS} ${MY_KIT_WRAP_HEADERS})
     set(_wrap_hierarchy_stamp_file)
@@ -177,7 +178,7 @@ macro(vtkMacroKitPythonWrap)
 
     # Generate hierarchy files for VTK8 and later
     if(NOT ${VTK_VERSION_MAJOR} VERSION_LESS 8)
-      include(${VTK_CMAKE_DIR}/vtkWrapHierarchy.cmake)
+      include(vtkWrapHierarchy)
 
       # Set variables for this and future runs of vtk_wrap_hierarchy:
       #  - <module_name>_WRAP_DEPENDS
@@ -219,26 +220,31 @@ macro(vtkMacroKitPythonWrap)
     set_target_properties(${MY_KIT_NAME} PROPERTIES SOURCES "${_kit_srcs}")
 
     set(VTK_KIT_PYTHON_LIBRARIES)
-    # XXX Hard-coded list of VTK kits available when building
-    #     with VTK_ENABLE_KITS set to 1
-    set(vtk_kits
-      vtkCommonKit
-      vtkFiltersKit
-      vtkImagingKit
-      vtkRenderingKit
-      vtkIOKit
-      vtkOpenGLKit
-      vtkInteractionKit
-      vtkViewsKit
-      vtkParallelKit
-      vtkWrappingKit
-      )
-    foreach(c ${VTK_LIBRARIES} ${vtk_kits})
-      if(${c} MATCHES "^vtk.+" AND TARGET ${c}PythonD) # exclude system libraries
-        list(APPEND VTK_KIT_PYTHON_LIBRARIES ${c}PythonD)
-      endif()
-    endforeach()
+    if(${VTK_VERSION} VERSION_LESS "8.90")
+      # XXX Hard-coded list of VTK kits available when building
+      #     with VTK_ENABLE_KITS set to 1
+      set(vtk_kits
+        vtkCommonKit
+        vtkFiltersKit
+        vtkImagingKit
+        vtkRenderingKit
+        vtkIOKit
+        vtkOpenGLKit
+        vtkInteractionKit
+        vtkViewsKit
+        vtkParallelKit
+        vtkWrappingKit
+        )
+      foreach(c ${VTK_LIBRARIES} ${vtk_kits})
+        if(${c} MATCHES "^vtk.+" AND TARGET ${c}PythonD) # exclude system libraries
+          list(APPEND VTK_KIT_PYTHON_LIBRARIES ${c}PythonD)
+        endif()
+      endforeach()
+    endif()
     set(VTK_PYTHON_CORE vtkWrappingPythonCore)
+    if(TARGET VTK::WrappingPythonCore)
+      set(VTK_PYTHON_CORE VTK::WrappingPythonCore)
+    endif()
     target_link_libraries(
       ${MY_KIT_NAME}PythonD
       ${MY_KIT_NAME}
