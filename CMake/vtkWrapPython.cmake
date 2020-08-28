@@ -157,7 +157,7 @@ $<$<BOOL:$<TARGET_PROPERTY:${TARGET},INCLUDE_DIRECTORIES>>:
         if(NOT ${dep}_KIT STREQUAL kit_basename)
           list(APPEND _python_module_depends ${${dep}_KIT}KitPython)
         endif()
-      elseif(TARGET ${dep}Python)
+      elseif(TARGET ${dep}Python AND NOT ${dep} MATCHES "VTK::")
         list(APPEND _python_module_depends ${dep}Python)
       endif()
     endforeach()
