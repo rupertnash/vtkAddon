@@ -47,6 +47,28 @@ macro(VTK_WRAP_PYTHON3 TARGET SRC_LIST_NAME SOURCES)
     set(_common_args "${_common_args}--types \"${file}\"\n")
   endforeach()
 
+  # collect hierarchy files for VTK dependencies
+  if(${VTK_VERSION} VERSION_GREATER_EQUAL "8.90")
+    set(_vtk_python_hierarchy_files)
+    string(REGEX REPLACE "Python$" "" _basename "${TARGET}")
+    foreach(_python_hierarchy_depends IN LISTS ${_basename}_WRAP_DEPENDS)
+      # Extract path of hierarchy file for VTK dependencies only
+      if(NOT _python_hierarchy_depends MATCHES "^VTK::")
+        continue()
+      endif()
+      _vtk_module_get_module_property("${_python_hierarchy_depends}"
+        PROPERTY  "hierarchy"
+        VARIABLE  _vtk_python_hierarchy_file
+        )
+      list(APPEND _vtk_python_hierarchy_files ${_vtk_python_hierarchy_file})
+    endforeach()
+    set(_common_args "${_common_args}
+$<$<BOOL:${_vtk_python_hierarchy_files}>:
+--types \"$<JOIN:${_vtk_python_hierarchy_files},\"
+--types \">\">
+")
+  endif()
+
   # write wrapper-tool arguments to a file
   set(_args_file ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.$<CONFIGURATION>.args)
   file(GENERATE OUTPUT ${_args_file} CONTENT "${_common_args}
